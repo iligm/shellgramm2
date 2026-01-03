@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-DEFAULT_REPO_URL="https://github.com/shellgramm/shellgramm2.git"
+DEFAULT_REPO_URL="https://github.com/iligm/shellgramm2.git"
 REPO_URL="${REPO_URL:-$DEFAULT_REPO_URL}"
 BRANCH="${BRANCH:-main}"
 REPO_DIR="${REPO_DIR:-"$HOME/shellgramm2"}"
