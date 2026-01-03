@@ -56,44 +56,6 @@ pip install --upgrade pip
 echo "==> Установка Python-зависимостей..."
 pip install -r requirements.txt
 
-if [[ ! -f .env ]]; then
-  echo "==> Создание файла .env..."
-  python3 <<'PYTHON_SCRIPT'
-import os
-
-env_path = ".env"
-
-print("Файл .env не найден. Пожалуйста, введите настройки в следующем формате:")
-print("API_ID=aaaaaaa")
-print("API_HASH=aaaaaaa")
-print("SESSION_NAME=userbot_session")
-print("NTP_HOST=pool.ntp.org")
-print("\nВведите данные (можно вставить все строки сразу, завершите ввод пустой строкой):")
-
-lines = []
-while True:
-    try:
-        line = input()
-        if not line.strip():
-            break
-        lines.append(line)
-    except (EOFError, KeyboardInterrupt):
-        print("\nВвод прерван.")
-        exit(1)
-
-if not lines:
-    print("Ошибка: Не введены данные для .env файла.")
-    exit(1)
-
-# Сохраняем введенные данные в .env файл
-with open(env_path, "w", encoding="utf-8") as f:
-    for line in lines:
-        f.write(line + "\n")
-
-print("Файл .env создан.")
-PYTHON_SCRIPT
-fi
-
 cat <<'EOF'
 Готово.
 
@@ -107,3 +69,36 @@ cat <<'EOF'
 - Пример curl-запуска:
     curl -fsSL https://raw.githubusercontent.com/shellgramm/shellgramm2/main/termux_install.sh | bash
 EOF
+
+# Создание .env файла в самом конце
+if [[ ! -f .env ]]; then
+  echo ""
+  echo "==> Создание файла .env..."
+  echo "Файл .env не найден. Пожалуйста, введите настройки в следующем формате:"
+  echo "API_ID=aaaaaaa"
+  echo "API_HASH=aaaaaaa"
+  echo "SESSION_NAME=userbot_session"
+  echo "NTP_HOST=pool.ntp.org"
+  echo ""
+  echo "Введите данные (можно вставить все строки сразу, завершите ввод пустой строкой):"
+  
+  # Временно отключаем set -e для корректной обработки read
+  set +e
+  > .env
+  while true; do
+    IFS= read -r line || break
+    # Проверяем, пустая ли строка (только пробелы)
+    if [[ -z "${line// }" ]]; then
+      break
+    fi
+    echo "$line" >> .env
+  done
+  set -e
+  
+  if [[ ! -s .env ]]; then
+    echo "Ошибка: Не введены данные для .env файла."
+    exit 1
+  fi
+  
+  echo "Файл .env создан."
+fi
