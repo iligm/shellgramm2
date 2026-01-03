@@ -19,6 +19,7 @@ from textual.containers import Vertical, Horizontal
 
 
 # ========= НАСТРОЙКИ TELEGRAM API =========
+
 def create_env_file() -> None:
     """Создает .env файл, запрашивая ввод у пользователя."""
     env_path = ".env"
@@ -55,7 +56,6 @@ def create_env_file() -> None:
     print(f"Файл .env создан.")
 
 
-create_env_file()
 load_dotenv()
 
 API_ID: int = int(os.getenv("API_ID", "0"))
@@ -260,7 +260,7 @@ def parse_datetime(user_text: str) -> Optional[datetime]:
     return None
 
 
-async def get_time_delta_ntp() -> float:
+async def get_time_delta_ntp(ntp_host: str) -> float:
     """
     Возвращает поправку времени (сек): ntp_time - local_time.
     Если ntplib не установлен или NTP недоступен, возвращает 0.
@@ -272,7 +272,7 @@ async def get_time_delta_ntp() -> float:
 
     def _sync() -> float:
         c = ntplib.NTPClient()
-        r = c.request(NTP_HOST, version=3, timeout=3)
+        r = c.request(ntp_host, version=3, timeout=3)
         ntp_dt = datetime.fromtimestamp(r.tx_time)
         local_dt = datetime.now()
         return (ntp_dt - local_dt).total_seconds()
@@ -654,14 +654,26 @@ class TelegramTui(App):
 # ========= ТОЧКА ВХОДА =========
 
 async def main_async() -> None:
-    if not API_ID or not API_HASH:
+    # Создаем .env файл, если его нет
+    create_env_file()
+    
+    # Перезагружаем переменные окружения после создания .env
+    load_dotenv(override=True)
+    
+    # Получаем значения после создания .env
+    api_id = int(os.getenv("API_ID", "0"))
+    api_hash = os.getenv("API_HASH", "")
+    session_name = os.getenv("SESSION_NAME", "userbot_session")
+    ntp_host = os.getenv("NTP_HOST", "pool.ntp.org")
+    
+    if not api_id or not api_hash:
         raise RuntimeError("Заполни API_ID и API_HASH в .env.")
 
-    client = TelegramClient(SESSION_NAME, API_ID, API_HASH)
+    client = TelegramClient(session_name, api_id, api_hash)
 
     await client.start()
 
-    time_delta_sec = await get_time_delta_ntp()
+    time_delta_sec = await get_time_delta_ntp(ntp_host)
 
     dialogs = await load_dialogs(client)
 
