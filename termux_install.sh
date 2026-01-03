@@ -57,21 +57,47 @@ echo "==> Установка Python-зависимостей..."
 pip install -r requirements.txt
 
 if [[ ! -f .env ]]; then
-  cat > .env <<'EOF'
-API_ID=
-API_HASH=
-SESSION_NAME=userbot_session
-NTP_HOST=pool.ntp.org
-EOF
-  echo "==> Создан файл .env с шаблоном. Заполните API_ID и API_HASH."
+  echo "==> Создание файла .env..."
+  python3 <<'PYTHON_SCRIPT'
+import os
+
+env_path = ".env"
+
+print("Файл .env не найден. Пожалуйста, введите настройки в следующем формате:")
+print("API_ID=aaaaaaa")
+print("API_HASH=aaaaaaa")
+print("SESSION_NAME=userbot_session")
+print("NTP_HOST=pool.ntp.org")
+print("\nВведите данные (можно вставить все строки сразу, завершите ввод пустой строкой):")
+
+lines = []
+while True:
+    try:
+        line = input()
+        if not line.strip():
+            break
+        lines.append(line)
+    except (EOFError, KeyboardInterrupt):
+        print("\nВвод прерван.")
+        exit(1)
+
+if not lines:
+    print("Ошибка: Не введены данные для .env файла.")
+    exit(1)
+
+# Сохраняем введенные данные в .env файл
+with open(env_path, "w", encoding="utf-8") as f:
+    for line in lines:
+        f.write(line + "\n")
+
+print("Файл .env создан.")
+PYTHON_SCRIPT
 fi
 
 cat <<'EOF'
 Готово.
 
-1) Заполните .env в корне репозитория значениями API_ID и API_HASH.
-
-2) Запустите приложение:
+Запустите приложение:
    source .venv/bin/activate
    python main.py
 
