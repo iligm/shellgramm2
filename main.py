@@ -19,6 +19,43 @@ from textual.containers import Vertical, Horizontal
 
 
 # ========= НАСТРОЙКИ TELEGRAM API =========
+def create_env_file() -> None:
+    """Создает .env файл, запрашивая ввод у пользователя."""
+    env_path = ".env"
+    
+    if os.path.exists(env_path):
+        return
+    
+    print("Файл .env не найден. Пожалуйста, введите настройки в следующем формате:")
+    print("API_ID=aaaaaaa")
+    print("API_HASH=aaaaaaa")
+    print("SESSION_NAME=userbot_session")
+    print("NTP_HOST=pool.ntp.org")
+    print("\nВведите данные (можно вставить все строки сразу, завершите ввод пустой строкой):")
+    
+    lines = []
+    while True:
+        try:
+            line = input()
+            if not line.strip():
+                break
+            lines.append(line)
+        except (EOFError, KeyboardInterrupt):
+            print("\nВвод прерван.")
+            raise RuntimeError("Создание .env файла отменено.")
+    
+    if not lines:
+        raise RuntimeError("Не введены данные для .env файла.")
+    
+    # Сохраняем введенные данные в .env файл
+    with open(env_path, "w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
+    
+    print(f"Файл .env создан.")
+
+
+create_env_file()
 load_dotenv()
 
 API_ID: int = int(os.getenv("API_ID", "0"))
