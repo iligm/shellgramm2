@@ -20,16 +20,27 @@ else
 fi
 
 if [[ "${PREFIX:-}" != "/data/data/com.termux/files/usr" ]]; then
-  echo "⚠️ Похоже, что вы запускаете скрипт вне Termux (PREFIX=${PREFIX:-unset})."
+  echo "Похоже, что вы запускаете скрипт вне Termux (PREFIX=${PREFIX:-unset})."
   echo "Скрипт предназначен для среды Termux, продолжение — на ваш страх и риск."
 fi
 
-echo "==> Обновление пакетов Termux..."
-pkg update -y
-pkg upgrade -y
+# Важно: при запуске через `curl ... | bash` stdin не интерактивный.
+# Поэтому подавляем любые вопросы dpkg и ВСЕГДА берём конфиги мейнтейнера.
+export DEBIAN_FRONTEND=noninteractive
+APT_OPTS=(
+  -y
+  -o Dpkg::Options::=--force-confdef
+  -o Dpkg::Options::=--force-confnew
+)
+
+echo "==> Обновление индекса пакетов Termux..."
+apt-get update
+
+echo "==> Обновление установленных пакетов (конфиги = версия мейнтейнера)..."
+apt-get "${APT_OPTS[@]}" upgrade --with-new-pkgs
 
 echo "==> Установка системных зависимостей..."
-pkg install -y python git libffi openssl clang
+apt-get "${APT_OPTS[@]}" install python git libffi openssl clang
 
 echo "==> Загрузка или обновление репозитория..."
 if [[ -d "$REPO_ROOT/.git" ]]; then
@@ -48,6 +59,7 @@ if [[ ! -d .venv ]]; then
   python -m venv .venv
 fi
 
+# shellcheck disable=SC1091
 source .venv/bin/activate
 
 echo "==> Обновление pip..."
@@ -67,5 +79,5 @@ cat <<'EOF'
 - Можно указать REPO_URL, BRANCH или REPO_DIR перед запуском скрипта,
   чтобы задать свой форк/ветку или путь установки.
 - Пример curl-запуска:
-    curl -fsSL https://raw.githubusercontent.com/shellgramm/shellgramm2/main/termux_install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/iligm/shellgramm2/main/termux_install.sh | bash
 EOF
