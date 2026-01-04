@@ -24,20 +24,30 @@ if [[ "${PREFIX:-}" != "/data/data/com.termux/files/usr" ]]; then
   echo "Скрипт предназначен для среды Termux, продолжение — на ваш страх и риск."
 fi
 
-# Важно: при запуске через `curl ... | bash` stdin не интерактивный.
-# Поэтому подавляем любые вопросы dpkg и ВСЕГДА берём конфиги мейнтейнера.
+# Неинтерактивно + всегда выбирать "N" (keep current version) для conffiles
+# чтобы не слетали зеркала/репозитории.
 export DEBIAN_FRONTEND=noninteractive
 APT_OPTS=(
   -y
   -o Dpkg::Options::=--force-confdef
-  -o Dpkg::Options::=--force-confnew
+  -o Dpkg::Options::=--force-confold
 )
+
+# Если ранее обновление было прервано — попробуем починить тихо.
+echo "==> Восстановление пакетов (если прошлое обновление было прервано)..."
+apt-get "${APT_OPTS[@]}" --fix-broken install || true
 
 echo "==> Обновление индекса пакетов Termux..."
 apt-get update
 
-echo "==> Обновление установленных пакетов (конфиги = версия мейнтейнера)..."
-apt-get "${APT_OPTS[@]}" upgrade --with-new-pkgs
+# Для скорости: НЕ делаем полный upgrade по умолчанию.
+# Если всё же нужно обновить вообще всё — запускайте с TERMUX_FULL_UPGRADE=1
+if [[ "${TERMUX_FULL_UPGRADE:-0}" == "1" ]]; then
+  echo "==> Полное обновление пакетов (TERMUX_FULL_UPGRADE=1)..."
+  apt-get "${APT_OPTS[@]}" upgrade --with-new-pkgs
+else
+  echo "==> Пропуск полного обновления (для скорости)."
+fi
 
 echo "==> Установка системных зависимостей..."
 apt-get "${APT_OPTS[@]}" install python git libffi openssl clang
@@ -78,6 +88,6 @@ cat <<'EOF'
 Подсказки:
 - Можно указать REPO_URL, BRANCH или REPO_DIR перед запуском скрипта,
   чтобы задать свой форк/ветку или путь установки.
-- Пример curl-запуска:
-    curl -fsSL https://raw.githubusercontent.com/iligm/shellgramm2/main/termux_install.sh | bash
+- Для полного обновления всех пакетов Termux (долго):
+    TERMUX_FULL_UPGRADE=1 <команда запуска скрипта>
 EOF
